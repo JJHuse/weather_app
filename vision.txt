@@ -7,6 +7,8 @@
     c. Give minimum date warnings
     d. Shorter timeout?
     e. Ultimately, querying won't get faster unless it's parallel or pre-retrieved. Can I get multiple tokens?
+    f. Find closest location to desired location
+    g. Family History relevance, significant dates
 2. Functionality
     a. Toggle line graph vs. histogram
         i. show dates for max and min values
@@ -26,6 +28,11 @@
 4. Top five priorities
     a. DONE Pre-1982
     b. Search result memory and comparison (side bar?)
+        i. Make a side bar
+        ii. Check the stored data
+        iii. Check date overlap
+        iv. One nice thing is the python dictionary update() method,
+            which checks for preexisting keys and changes their value.
     c. Quicker queries and/or progress bar
     d. Better header
     e. Warning toast
