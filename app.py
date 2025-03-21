@@ -271,13 +271,14 @@ def get_date_picker_range(city):
      Output('stored-data', 'data'),
      Output('days-represented', 'children')],
     [Input('submit-btn', 'n_clicks')],
-    [State('city-dropdown', 'value'), 
-     State('date-picker', 'start_date'), 
-     State('date-picker', 'end_date'), 
-     State('weather-category', 'value'), 
-     State('guess-input', 'value')]
+    [State('city-dropdown', 'value'),
+     State('date-picker', 'start_date'),
+     State('date-picker', 'end_date'),
+     State('weather-category', 'value'),
+     State('guess-input', 'value'),
+     State('stored-data', 'data')]
 )
-def update_output(n_clicks, city, start_date, end_date, category, guess):
+def update_output(n_clicks, city, start_date, end_date, category, guess, stored_data):
     empty_fig = go.Figure().update_layout(
         plot_bgcolor='white', 
         paper_bgcolor='white', 
@@ -285,10 +286,12 @@ def update_output(n_clicks, city, start_date, end_date, category, guess):
         xaxis={'visible': False}, 
         yaxis={'visible': False}
     )
+    if stored_data is None:
+        stored_data = {}
 
     if n_clicks == 0 or guess is None or city is None:
         logger.info("Callback skipped: Missing input (n_clicks, guess, or city)")
-        return empty_fig, "Enter a guess and select a city to see results.", {}, "0 days"
+        return empty_fig, "Enter a guess and select a city to see results.", stored_data, "0 days"
 
     location_id = LOCATIONS[city]
     logger.info(f"Fetching data for {city}, {category} from {start_date} to {end_date} using location {location_id}")
@@ -337,7 +340,7 @@ def update_output(n_clicks, city, start_date, end_date, category, guess):
 
     if not all_data:
         logger.warning(f"No data retrieved for station {station_id} across all blocks")
-        return empty_fig, f"No data available for {city} from station {station_id}", {}, "0 days"
+        return empty_fig, f"No data available for {city} from station {station_id}", stored_data, "0 days"
 
     full_data = pd.concat(all_data, ignore_index=True)
     values = full_data['value'].astype(float)
@@ -372,8 +375,8 @@ def update_output(n_clicks, city, start_date, end_date, category, guess):
     stats = f"Min {min_row['value']:.1f} on {min_row['date'].split('T')[0]}\
         | Max {max_row['value']:.1f} on {max_row['date'].split('T')[0]}"
     logger.info(f"Stats calculated for station {station_id}: {stats}")
-
-    stored_data = full_data.to_dict('records')  # Convert DataFrame to JSON-serializable format
+    
+    stored_data.update({city: full_data.to_dict('records')})  # Convert DataFrame to JSON-serializable format
     return fig, stats, stored_data, days_text
 
 
