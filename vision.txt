@@ -17,13 +17,14 @@
         i. And enable comparison between two places
     e. input security
     f. React
+    g. Update code with MVC model
 3. What's already out there
     a. wunderground
     b. weather.gov/wrh/climate
     c. extremeweatherwatch.com
     d. weatherspark.com
 4. Top five priorities
-    a. Pre-1982
+    a. DONE Pre-1982
     b. Search result memory and comparison (side bar?)
     c. Quicker queries and/or progress bar
     d. Better header
