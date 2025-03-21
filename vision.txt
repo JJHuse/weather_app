@@ -17,7 +17,6 @@
         i. And enable comparison between two places
     e. input security
     f. React
-    g. Get on github (after removing secrets)
 3. What's already out there
     a. wunderground
     b. weather.gov/wrh/climate
