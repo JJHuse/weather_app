@@ -62,13 +62,18 @@ app.layout = dbc.Container(
                         searchable=True,
                         className='mb-2'
                     ), width=6),
-                    dbc.Col(dcc.DatePickerRange(
-                        id='date-picker',
-                        min_date_allowed='1982-01-01',
-                        max_date_allowed='2025-03-04',
-                        start_date='2000-01-01',
-                        end_date='2000-12-31',
-                    ), width=6)
+                    dbc.Col([
+                        dcc.DatePickerRange(
+                            id='date-picker',
+                            min_date_allowed='1982-01-01',
+                            max_date_allowed='2025-03-04',
+                            start_date='2000-01-01',
+                            end_date='2000-12-31',
+                            style={'display': 'none'}
+                        ),
+                        html.P(id='min-date-display', className='text-muted')
+                    ], width=3),
+                    # dbc.Col(html.P(id='min-date-display', className='text-muted'), width=3)
                 ]),
                 dbc.Row([
                     dbc.Col(dcc.Dropdown(
@@ -233,6 +238,26 @@ def get_station_id(params, empty_fig, city, get_all=False):
 def get_days_in_range(start, end):
     date_format = '%Y-%m-%d'
     return (datetime.strptime(end, date_format) - datetime.strptime(start, date_format)).days + 1
+
+
+@app.callback(
+        [Output('date-picker', 'style'),
+         Output('date-picker', 'min_date_allowed'),
+         Output('date-picker', 'max_date_allowed'),
+         Output('min-date-display', 'children')],
+        [Input('city-dropdown', 'value')]
+)
+def get_date_picker_range(city):
+    if city is None:
+        return {'display': 'none'}, '01-01-2000', '01-01-2000', 'select location'
+    url = "https://www.ncei.noaa.gov/cdo-web/api/v2/locations/"
+    response = requests.get(url + LOCATIONS[city], headers=headers)
+    if response.status_code != 200:
+        return {'display': 'none'}, '01-01-2000', '01-01-2000', 'error with location'
+    data = response.json()
+    start_date = data['mindate']
+    end_date = data['maxdate']
+    return {'display': 'block'}, start_date, end_date, f"Earliest date: {start_date}"
 
 
 # Callback to fetch NOAA data and update output
