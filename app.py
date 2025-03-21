@@ -377,7 +377,8 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
     logger.info(f"Stats calculated for station {station_id}: {stats}")
 
     key = f"{city}_{category}"
-    stored_data.update({key: full_data.to_dict('records')})  # Convert DataFrame to JSON-serializable format
+    value = full_data.set_index('date')['value'].to_dict()
+    stored_data.update({key: value})  # Convert DataFrame to JSON-serializable format
     return fig, stats, stored_data, days_text
 
 
