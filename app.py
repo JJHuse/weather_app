@@ -198,7 +198,7 @@ def fetch_station_data(station_id, datatype, start_date, end_date):
     return pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
 
 
-def get_station_id(params, empty_fig, city, get_all=False):
+def get_station_id(params, get_all=False):
     for attempt in range(2):
         start_time = time.time()
         try:
@@ -215,13 +215,13 @@ def get_station_id(params, empty_fig, city, get_all=False):
             # check response
             if response.status_code != 200 or 'results' not in response.json():
                 logger.warning(f"Initial fetch failed: Status {response.status_code}, Response: {response.text}")
-                return empty_fig, f"Error fetching data for {city}: No station found"
+                raise Exception("No data available in this date range")
             data = pd.DataFrame(response.json()["results"])
 
             # decide what to return
             if data.empty:
                 logger.warning("No data returned for initial query")
-                return empty_fig, f"No data available for {city}"
+                return None
             if get_all:
                 return set(data['station'])
             station_id = data['station'].iloc[0]
@@ -230,6 +230,10 @@ def get_station_id(params, empty_fig, city, get_all=False):
         except requests.Timeout:
             logger.error(f"Query timed out after {time.time() - start_time:.2f}s")
             time.sleep(THROTTLE_TIME)
+        except Exception as e:
+            if attempt == 1:
+                raise e
+            continue
 
     logger.info(f"Selected station ID: {station_id}")
     return station_id
@@ -295,17 +299,11 @@ def update_output(n_clicks, city, start_date, end_date, category, guess):
         "locationid": location_id,
         "datatypeid": category,
         "startdate": start_date,
-        "enddate": start_date,  # Single day for quick fetch
+        "enddate": end_date,
         "limit": 1,
         "units": "standard"
     }
-    
-    try:
-        station_id = get_station_id(params, empty_fig, city)
-    
-    except Exception as e:
-        logger.error(f"Initial query failed: {str(e)}")
-        return empty_fig, f"Error fetching data for {city}: Request failed", {}, "0 days"
+    station_id = None
 
     # Step 2: Break into one-year blocks and fetch data
     year_blocks = split_into_year_blocks(start_date, end_date)
@@ -313,14 +311,20 @@ def update_output(n_clicks, city, start_date, end_date, category, guess):
     all_data = []
 
     for block_start, block_end in year_blocks:
+        if station_id is None:
+            try:
+                params.update({"startdate": block_start, "enddate": block_end})
+                station_id = get_station_id(params)
+            except Exception:
+                logger.info("No data for block %s to %s", block_start, block_end)
+                continue
         missing_days_tolerance = 75
         target_days = get_days_in_range(block_start, block_end) - missing_days_tolerance
         block_data = fetch_station_data(station_id, category, block_start, block_end)
         if block_data.empty or block_data.shape[0] < target_days:
-            params['startdate'] = block_start
-            params['enddate'] = block_end
+            params.update({"startdate": block_start, "enddate": block_end})
             params['limit'] = 5
-            station_ids = get_station_id(params, empty_fig, city, get_all=True)
+            station_ids = get_station_id(params, get_all=True)
             for s in station_ids:
                 if s == station_id:
                     continue
