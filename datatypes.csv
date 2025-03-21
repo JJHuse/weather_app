@@ -1,0 +1,7 @@
+code,description
+AWND,average wind speed
+SNOW,Snowfall
+SNWD,Snow depth
+TMAX,Maximum temperature
+TMIN,Minimum temperature
+WSF5,Fastest 5-second wind speed
