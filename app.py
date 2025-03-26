@@ -48,87 +48,92 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
     fluid=True,
     children=[
-        html.H1("Could you really fry an egg?", className="text-center mt-4 mb-4"),
-        html.H6("Weather fact-checker (NOAA data)", className="text-center mt-4 mb-4"),
-        dcc.Store(id='stored-data'),
-        dbc.Button("Previous", id="toggle-sidebar-btn", className="mb-3"),
-        # dbc.Collapse(
-        #     id="sidebar",
-        #     is_open=False,
-        #     children=[
-        #         html.H4("Past Searches", className="text-center mt-2"),
-        #         dcc.Tabs(id="sidebar-tabs", value=None, children=[]),  # Tabs will be dynamically populated
-        #         html.Div(id="sidebar-content", className="mt-3")  # Content for the selected tab
-        #     ],
-        #     style={"width": "20rem", "background-color": "#f8f9fa", "padding": "1rem",
-        #            "border-right": "1px solid #ddd"}
-        # ),
-        dbc.Card(
-            dbc.CardBody([
-                dbc.Row([
-                    dbc.Col(dcc.Dropdown(
-                        id='city-dropdown',
-                        options=[{'label': name, 'value': name} for name in LOCATIONS.keys()],
-                        value='Fargo, ND US',
-                        placeholder='Search for a city',
-                        searchable=True,
-                        className='mb-2'
-                    ), width=6),
-                    dbc.Col([
-                        dcc.DatePickerRange(
-                            id='date-picker',
-                            min_date_allowed='1982-01-01',
-                            max_date_allowed='2025-03-04',
-                            start_date='2000-01-01',
-                            end_date='2000-12-01',
-                            style={'display': 'none'}
-                        ),
-                        html.P(id='min-date-display', className='text-muted')
-                    ], width=3),
-                    # dbc.Col(html.P(id='min-date-display', className='text-muted'), width=3)
-                ]),
-                dbc.Row([
-                    dbc.Col(dcc.Dropdown(
-                        id='weather-category',
-                        options=[{'label': DATATYPES[dt], 'value': dt} for dt in DATATYPES],
-                        value='TMAX',
-                        placeholder='Select weather category',
-                    ), width=6),
-                    dbc.Col(dcc.Input(
-                        id='guess-input',
-                        type='number',
-                        placeholder='Your guess',
-                        className='form-control'
-                    ), width=3),
-                    dbc.Col(html.Button('Submit', id='submit-btn', n_clicks=0, className='btn btn-primary'), width=3)
-                ], className='mt-3'),
-            ]),
-            className='mb-4 shadow-sm'
-        ),
-        dbc.Card(
-            dbc.CardBody([
-                dbc.Row([
-                    dbc.Col(
-                        dcc.Graph(id='distribution-graph', config={'displayModeBar': False}),
-                        width=10
-                    ),
-                    dbc.Col(
-                        dbc.Card(
-                            dbc.CardBody([
-                                html.H6("Days Represented", className="card-title"),
-                                html.P(id='days-represented', className="card-text")
-                            ]),
-                            style={"width": "12rem"}
-                        ),
-                        width=2
-                    )
-                    ]),
-                html.Div(id='stats-output', className='text-center text-muted mt-2')
-                ]
+        dbc.Row([
+            html.H1("Could you really fry an egg?", className="text-center mt-4 mb-1"),
+            html.H6("Weather fact-checker (NOAA data)", className="text-center mt-2 mb-4"),
+            dcc.Store(id='stored-data')
+        ]),
+        dbc.Row([
+            dbc.Col(
+                children=[
+                    html.H4("Past Searches", className="text-center mt-2"),
+                    dcc.Tabs(id="sidebar-tabs", value=None, children=[], vertical=True),
+                    # html.Div(id="sidebar-content", className="mt-3")  # Content for the selected tab
+                ],
+                style={"width": "auto", "background-color": "#f8f9fa", "padding": "1rem",
+                       "border-right": "1px solid #ddd"},
+                width=2
             ),
-            className='shadow-sm'
-        )
-    ]
+            dbc.Col([
+                dbc.Card(
+                    dbc.CardBody([
+                        dbc.Row([
+                            dbc.Col(dcc.Dropdown(
+                                id='city-dropdown',
+                                options=[{'label': name, 'value': name} for name in LOCATIONS.keys()],
+                                value='Fargo, ND US',
+                                placeholder='Search for a city',
+                                searchable=True,
+                                className='mb-2'
+                            ), width=6),
+                            dbc.Col([
+                                dcc.DatePickerRange(
+                                    id='date-picker',
+                                    min_date_allowed='1982-01-01',
+                                    max_date_allowed='2025-03-04',
+                                    start_date='2000-01-01',
+                                    end_date='2000-12-01',
+                                    style={'display': 'none'}
+                                ),
+                                html.P(id='min-date-display', className='text-muted')
+                            ], width=3),
+                            # dbc.Col(html.P(id='min-date-display', className='text-muted'), width=3)
+                        ]),
+                        dbc.Row([
+                            dbc.Col(dcc.Dropdown(
+                                id='weather-category',
+                                options=[{'label': DATATYPES[dt], 'value': dt} for dt in DATATYPES],
+                                value='TMAX',
+                                placeholder='Select weather category',
+                            ), width=6),
+                            dbc.Col(dcc.Input(
+                                id='guess-input',
+                                type='number',
+                                placeholder='Your guess',
+                                className='form-control'
+                            ), width=3),
+                            dbc.Col(html.Button('Submit', id='submit-btn', n_clicks=0, className='btn btn-primary'),
+                                    width=3)
+                        ], className='mt-3'),
+                    ]),
+                    className='mb-4 shadow-sm'
+                ),
+                dbc.Card(
+                    dbc.CardBody([
+                        dbc.Row([
+                            dbc.Col(
+                                dcc.Graph(id='distribution-graph', config={'displayModeBar': False}),
+                                width=10
+                            ),
+                            dbc.Col(
+                                dbc.Card(
+                                    dbc.CardBody([
+                                        html.H6("Days Represented", className="card-title"),
+                                        html.P(id='days-represented', className="card-text")
+                                    ]),
+                                    style={"width": "12rem"}
+                                ),
+                                width=2
+                            )
+                            ]),
+                        html.Div(id='stats-output', className='text-center text-muted mt-2')
+                        ]
+                    ),
+                    className='shadow-sm'
+                )
+            ])
+        ])
+        ]
 )
 
 
@@ -300,16 +305,16 @@ def get_date_picker_range(city):
 #     return current_style
 
 
-# @app.callback(
-#     Output("sidebar-tabs", "children"),
-#     [Input("stored-data", "data")]
-# )
-# def update_sidebar_tabs(stored_data):
-#     if not stored_data:
-#         return []
-#     return [
-#         dcc.Tab(label=key, value=key) for key in stored_data.keys()
-#     ]
+@app.callback(
+    Output("sidebar-tabs", "children"),
+    [Input("stored-data", "data")]
+)
+def update_sidebar_tabs(stored_data):
+    if not stored_data:
+        return []
+    return [
+        dcc.Tab(label=key) for key in reversed(stored_data.keys())
+    ]
 
 
 # @app.callback(

@@ -28,7 +28,7 @@
 4. Top five priorities
     a. DONE Pre-1982
     b. Search result memory and comparison (side bar?)
-        i. Make a side bar
+        i. Make a side bar. So far it's been hard to get it vertical. Maybe I don't want it to collapse.
         ii. Check the stored data
         iii. Check date overlap
         iv. One nice thing is the python dictionary update() method,
