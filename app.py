@@ -51,13 +51,25 @@ app.layout = dbc.Container(
         html.H1("Could you really fry an egg?", className="text-center mt-4 mb-4"),
         html.H6("Weather fact-checker (NOAA data)", className="text-center mt-4 mb-4"),
         dcc.Store(id='stored-data'),
+        dbc.Button("Previous", id="toggle-sidebar-btn", className="mb-3"),
+        # dbc.Collapse(
+        #     id="sidebar",
+        #     is_open=False,
+        #     children=[
+        #         html.H4("Past Searches", className="text-center mt-2"),
+        #         dcc.Tabs(id="sidebar-tabs", value=None, children=[]),  # Tabs will be dynamically populated
+        #         html.Div(id="sidebar-content", className="mt-3")  # Content for the selected tab
+        #     ],
+        #     style={"width": "20rem", "background-color": "#f8f9fa", "padding": "1rem",
+        #            "border-right": "1px solid #ddd"}
+        # ),
         dbc.Card(
             dbc.CardBody([
                 dbc.Row([
                     dbc.Col(dcc.Dropdown(
                         id='city-dropdown',
                         options=[{'label': name, 'value': name} for name in LOCATIONS.keys()],
-                        value='Minneapolis-St. Paul',
+                        value='Fargo, ND US',
                         placeholder='Search for a city',
                         searchable=True,
                         className='mb-2'
@@ -68,7 +80,7 @@ app.layout = dbc.Container(
                             min_date_allowed='1982-01-01',
                             max_date_allowed='2025-03-04',
                             start_date='2000-01-01',
-                            end_date='2000-12-31',
+                            end_date='2000-12-01',
                             style={'display': 'none'}
                         ),
                         html.P(id='min-date-display', className='text-muted')
@@ -262,6 +274,54 @@ def get_date_picker_range(city):
     start_date = data['mindate']
     end_date = data['maxdate']
     return {'display': 'block'}, start_date, end_date, f"Earliest date: {start_date}"
+
+
+# @app.callback(
+#     Output("sidebar", "is_open"),
+#     [Input("toggle-sidebar-btn", "n_clicks")],
+#     [State("sidebar", "is_open")]
+# )
+# def toggle_sidebar(n_clicks, is_open):
+#     if n_clicks:
+#         return not is_open
+#     return is_open
+# @app.callback(
+#     Output("sidebar", "style"),
+#     [Input("toggle-sidebar-btn", "n_clicks")],
+#     [State("sidebar", "style")]
+# )
+# def toggle_sidebar(n_clicks, current_style):
+#     if n_clicks:
+#         if current_style and current_style.get("display") == "none":
+#             return {"display": "block", "background-color": "#f8f9fa", "padding": "1rem",
+#                     "border-right": "1px solid #ddd"}
+#         else:
+#             return {"display": "none"}
+#     return current_style
+
+
+# @app.callback(
+#     Output("sidebar-tabs", "children"),
+#     [Input("stored-data", "data")]
+# )
+# def update_sidebar_tabs(stored_data):
+#     if not stored_data:
+#         return []
+#     return [
+#         dcc.Tab(label=key, value=key) for key in stored_data.keys()
+#     ]
+
+
+# @app.callback(
+#     Output("sidebar-content", "children"),
+#     [Input("sidebar-tabs", "value")],
+#     [State("stored-data", "data")]
+# )
+# def update_sidebar_content(selected_tab, stored_data):
+#     if not selected_tab or not stored_data:
+#         return "Select a tab to view data."
+#     data = stored_data[selected_tab]
+#     return html.Pre(json.dumps(data, indent=2))  # Display the data in JSON format
 
 
 # Callback to fetch NOAA data and update output
