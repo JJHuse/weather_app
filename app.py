@@ -112,10 +112,13 @@ app.layout = dbc.Container(
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col(
-                                dcc.Graph(id='distribution-graph', config={'displayModeBar': False}),
+                                children=[
+                                    dcc.Graph(id='distribution-graph', config={'displayModeBar': False}),
+                                    html.Div(id='stats-output', className='text-center text-muted mt-2')
+                                ],
                                 width=10
                             ),
-                            dbc.Col(
+                            dbc.Col([
                                 dbc.Card(
                                     dbc.CardBody([
                                         html.H6("Days Represented", className="card-title"),
@@ -123,10 +126,23 @@ app.layout = dbc.Container(
                                     ]),
                                     style={"width": "12rem"}
                                 ),
+                                dbc.Card(
+                                    dbc.CardBody([
+                                        html.H6("Minimum value", className="card-title"),
+                                        html.P(id='stats-min', className="card-text")
+                                    ]),
+                                    style={"width": "12rem"}
+                                ),
+                                dbc.Card(
+                                    dbc.CardBody([
+                                        html.H6("Maximum value", className="card-title"),
+                                        html.P(id='stats-max', className="card-text")
+                                    ]),
+                                    style={"width": "12rem"}
+                                )],
                                 width=2
                             )
                             ]),
-                        html.Div(id='stats-output', className='text-center text-muted mt-2')
                         ]
                     ),
                     className='shadow-sm'
@@ -311,9 +327,13 @@ def get_date_picker_range(city):
 )
 def update_sidebar_tabs(stored_data):
     if not stored_data:
-        return []
+        return [dcc.Tab(label="No Data Available")]
     return [
-        dcc.Tab(label=key) for key in reversed(stored_data.keys())
+        dcc.Tab(label=(
+            key.split(',')[0] + ' ' + key.split('_')[1] + ' ' +
+            str(pd.to_datetime(min(stored_data[key], key=pd.to_datetime)).year) + '-' +
+            str(pd.to_datetime(max(stored_data[key], key=pd.to_datetime)).year)
+            )) for key in reversed(stored_data.keys())
     ]
 
 
@@ -332,7 +352,8 @@ def update_sidebar_tabs(stored_data):
 # Callback to fetch NOAA data and update output
 @app.callback(
     [Output('distribution-graph', 'figure'),
-     Output('stats-output', 'children'),
+     Output('stats-min', 'children'),
+     Output('stats-max', 'children'),
      Output('stored-data', 'data'),
      Output('days-represented', 'children')],
     [Input('submit-btn', 'n_clicks')],
@@ -356,7 +377,7 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
 
     if n_clicks == 0 or guess is None or city is None:
         logger.info("Callback skipped: Missing input (n_clicks, guess, or city)")
-        return empty_fig, "Enter a guess and select a city to see results.", stored_data, "0 days"
+        return empty_fig, "None yet", "None yet", stored_data, "0 days"
 
     location_id = LOCATIONS[city]
     logger.info(f"Fetching data for {city}, {category} from {start_date} to {end_date} using location {location_id}")
@@ -405,7 +426,8 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
 
     if not all_data:
         logger.warning(f"No data retrieved for station {station_id} across all blocks")
-        return empty_fig, f"No data available for {city} from station {station_id}", stored_data, "0 days"
+        stat_error = f"No data available for {city} from station {station_id}"
+        return empty_fig, stat_error, stat_error, stored_data, "0 days"
 
     full_data = pd.concat(all_data, ignore_index=True)
     values = full_data['value'].astype(float)
@@ -437,14 +459,17 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
     # min_row = df.iloc[df["value"].idxmin()]['date'].split('T')[0]
     min_row = full_data.iloc[values.idxmin()]
     max_row = full_data.iloc[values.idxmax()]
-    stats = f"Min {min_row['value']:.1f} on {min_row['date'].split('T')[0]}\
-        | Max {max_row['value']:.1f} on {max_row['date'].split('T')[0]}"
-    logger.info(f"Stats calculated for station {station_id}: {stats}")
+    stat_min = f"{min_row['value']:.1f}, {min_row['date'].split('T')[0]}"
+    stat_max = f"{max_row['value']:.1f}, {max_row['date'].split('T')[0]}"
+    logger.info(f"Stats calculated for station {station_id}: {stat_min} {stat_max}")
 
     key = f"{city}_{category}"
     value = full_data.set_index('date')['value'].to_dict()
-    stored_data.update({key: value})  # Convert DataFrame to JSON-serializable format
-    return fig, stats, stored_data, days_text
+    if key in stored_data:
+        stored_data[key].update(value)
+    else:
+        stored_data.update({key: value})  # Convert DataFrame to JSON-serializable format
+    return fig, stat_min, stat_max, stored_data, days_text
 
 
 def split_data(df, fulcrum):

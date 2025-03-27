@@ -28,7 +28,7 @@
 4. Top five priorities
     a. DONE Pre-1982
     b. Search result memory and comparison (side bar?)
-        i. Make a side bar. Show start/end dates.
+        i. DONE Make a side bar. Show start/end dates.
         ii. Check the stored data. If start and end date match, display previous search.
         iii. Check date overlap
             - Grab overlap
