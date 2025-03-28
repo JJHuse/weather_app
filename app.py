@@ -331,9 +331,9 @@ def update_sidebar_tabs(stored_data):
     return [
         dcc.Tab(label=(
             key.split(',')[0] + ' ' + key.split('_')[1] + ' ' +
-            str(pd.to_datetime(min(stored_data[key], key=pd.to_datetime)).year) + '-' +
-            str(pd.to_datetime(max(stored_data[key], key=pd.to_datetime)).year)
-            )) for key in reversed(stored_data.keys())
+            str(pd.to_datetime(min(stored_data[key]['data'], key=pd.to_datetime)).year) + '-' +
+            str(pd.to_datetime(max(stored_data[key]['data'], key=pd.to_datetime)).year)
+            )) for key in reversed(stored_data.keys()) 
     ]
 
 
@@ -466,9 +466,11 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
     key = f"{city}_{category}"
     value = full_data.set_index('date')['value'].to_dict()
     if key in stored_data:
-        stored_data[key].update(value)
+        stored_data[key]['data'].update(value)
+        stored_data[key]['ranges'].append(f"{start_date} to {end_date}")
     else:
-        stored_data.update({key: value})  # Convert DataFrame to JSON-serializable format
+        stored_data[key] = {'data': value}  # Convert DataFrame to JSON-serializable format
+        stored_data[key]['ranges'] = [f"{start_date} to {end_date}"]
     return fig, stat_min, stat_max, stored_data, days_text
 
 
