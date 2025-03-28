@@ -297,30 +297,6 @@ def get_date_picker_range(city):
     return {'display': 'block'}, start_date, end_date, f"Earliest date: {start_date}"
 
 
-# @app.callback(
-#     Output("sidebar", "is_open"),
-#     [Input("toggle-sidebar-btn", "n_clicks")],
-#     [State("sidebar", "is_open")]
-# )
-# def toggle_sidebar(n_clicks, is_open):
-#     if n_clicks:
-#         return not is_open
-#     return is_open
-# @app.callback(
-#     Output("sidebar", "style"),
-#     [Input("toggle-sidebar-btn", "n_clicks")],
-#     [State("sidebar", "style")]
-# )
-# def toggle_sidebar(n_clicks, current_style):
-#     if n_clicks:
-#         if current_style and current_style.get("display") == "none":
-#             return {"display": "block", "background-color": "#f8f9fa", "padding": "1rem",
-#                     "border-right": "1px solid #ddd"}
-#         else:
-#             return {"display": "none"}
-#     return current_style
-
-
 @app.callback(
     Output("sidebar-tabs", "children"),
     [Input("stored-data", "data")]
@@ -335,18 +311,6 @@ def update_sidebar_tabs(stored_data):
             str(pd.to_datetime(max(stored_data[key]['data'], key=pd.to_datetime)).year)
             )) for key in reversed(stored_data.keys()) 
     ]
-
-
-# @app.callback(
-#     Output("sidebar-content", "children"),
-#     [Input("sidebar-tabs", "value")],
-#     [State("stored-data", "data")]
-# )
-# def update_sidebar_content(selected_tab, stored_data):
-#     if not selected_tab or not stored_data:
-#         return "Select a tab to view data."
-#     data = stored_data[selected_tab]
-#     return html.Pre(json.dumps(data, indent=2))  # Display the data in JSON format
 
 
 # Callback to fetch NOAA data and update output
@@ -456,7 +420,6 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
     )
 
     # Stats
-    # min_row = df.iloc[df["value"].idxmin()]['date'].split('T')[0]
     min_row = full_data.iloc[values.idxmin()]
     max_row = full_data.iloc[values.idxmax()]
     stat_min = f"{min_row['value']:.1f}, {min_row['date'].split('T')[0]}"
