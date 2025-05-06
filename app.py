@@ -298,28 +298,81 @@ def get_date_picker_range(city):
 
 
 @app.callback(
-    Output("sidebar-tabs", "children"),
+    [Output("sidebar-tabs", "children"),
+     Output("sidebar-tabs", "value")],
     [Input("stored-data", "data")]
 )
 def update_sidebar_tabs(stored_data):
     if not stored_data:
-        return [dcc.Tab(label="No Data Available")]
+        return [dcc.Tab(label="No Data Available")], None
     return [
         dcc.Tab(label=(
             key.split(',')[0] + ' ' + key.split('_')[1] + ' ' +
-            str(pd.to_datetime(min(stored_data[key]['data'], key=pd.to_datetime)).year) + '-' +
-            str(pd.to_datetime(max(stored_data[key]['data'], key=pd.to_datetime)).year)
-            )) for key in reversed(stored_data.keys()) 
-    ]
+            str(pd.to_datetime(key.split('_')[2]).year) + '-' +
+            str(pd.to_datetime(key.split('_')[3]).year)
+            ), value=key) for key in reversed(stored_data.keys())
+    ], list(stored_data.keys())[-1]
 
 
-# Callback to fetch NOAA data and update output
 @app.callback(
     [Output('distribution-graph', 'figure'),
      Output('stats-min', 'children'),
      Output('stats-max', 'children'),
-     Output('stored-data', 'data'),
      Output('days-represented', 'children')],
+    Input("sidebar-tabs", "value"),
+    [State('guess-input', 'value'),
+     State('stored-data', 'data')]
+    )
+def update_graph_from_sidebar(selected_tab, guess, stored_data):
+    if selected_tab is None or not stored_data:
+        empty_fig = go.Figure().update_layout(
+            plot_bgcolor='white', 
+            paper_bgcolor='white', 
+            font={'color': '#333'},
+            xaxis={'visible': False}, 
+            yaxis={'visible': False}
+        )
+        return empty_fig, "None yet", "None yet", "0 days"
+
+    # Extract data from the selected tab
+    key = selected_tab
+    data = pd.Series(stored_data[key])
+    unique_days = len(data)
+    days = get_days_in_range(key.split('_')[2], key.split('_')[3])
+    days_text = f"{unique_days} days of {days}"
+
+    below, above = split_data(data, guess)
+
+    # Graph: Histogram with guess line
+    fig = px.histogram(data, nbins=20, color_discrete_sequence=['#4682B4'])
+    fig.add_vline(x=guess, line_dash="dash", line_color="red", annotation_text=f"Below guess: {below}",
+                  annotation_position="top left")
+    fig.add_vline(x=guess, line_dash="dash", line_color="red", annotation_text=f"Above guess: {above}",
+                  annotation_position="top right")
+    fig.update_layout(
+        showlegend=False,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font={'color': '#333'},
+        bargap=0.1,
+        xaxis_title=key.split('_')[1],
+        yaxis_title="Count"
+    )
+
+    # Stats
+    min_date = data.idxmin()
+    max_date = data.idxmax()
+    min_val = data[min_date]
+    max_val = data[max_date]
+    stat_min = f"{min_val:.1f}, {min_date.split('T')[0]}"
+    stat_max = f"{max_val:.1f}, {max_date.split('T')[0]}"
+
+    return fig, stat_min, stat_max, days_text
+
+
+# Callback to fetch NOAA data and update output
+@app.callback(
+    Output('stored-data', 'data'),
     [Input('submit-btn', 'n_clicks')],
     [State('city-dropdown', 'value'),
      State('date-picker', 'start_date'),
@@ -329,19 +382,12 @@ def update_sidebar_tabs(stored_data):
      State('stored-data', 'data')]
 )
 def update_output(n_clicks, city, start_date, end_date, category, guess, stored_data):
-    empty_fig = go.Figure().update_layout(
-        plot_bgcolor='white', 
-        paper_bgcolor='white', 
-        font={'color': '#333'},
-        xaxis={'visible': False}, 
-        yaxis={'visible': False}
-    )
     if stored_data is None:
         stored_data = {}
 
     if n_clicks == 0 or guess is None or city is None:
         logger.info("Callback skipped: Missing input (n_clicks, guess, or city)")
-        return empty_fig, "None yet", "None yet", stored_data, "0 days"
+        return stored_data
 
     location_id = LOCATIONS[city]
     logger.info(f"Fetching data for {city}, {category} from {start_date} to {end_date} using location {location_id}")
@@ -390,55 +436,20 @@ def update_output(n_clicks, city, start_date, end_date, category, guess, stored_
 
     if not all_data:
         logger.warning(f"No data retrieved for station {station_id} across all blocks")
-        stat_error = f"No data available for {city} from station {station_id}"
-        return empty_fig, stat_error, stat_error, stored_data, "0 days"
+        return stored_data
 
     full_data = pd.concat(all_data, ignore_index=True)
     values = full_data['value'].astype(float)
     logger.info(f"Total data fetched for station {station_id}: {len(values)} records")
 
-    unique_days = len(full_data['date'].unique())
-    days = get_days_in_range(start_date, end_date)
-    days_text = f"{unique_days} days of {days}"
-
-    below, above = split_data(full_data, guess)
-
-    # Graph: Histogram with guess line
-    fig = px.histogram(values, nbins=20, color_discrete_sequence=['#4682B4'])
-    fig.add_vline(x=guess, line_dash="dash", line_color="red", annotation_text=f"Below guess: {below}",
-                  annotation_position="top left")
-    fig.add_vline(x=guess, line_dash="dash", line_color="red", annotation_text=f"Above guess: {above}",
-                  annotation_position="top right")
-    fig.update_layout(
-        showlegend=False, 
-        plot_bgcolor='white', 
-        paper_bgcolor='white', 
-        font={'color': '#333'}, 
-        bargap=0.1,
-        xaxis_title=category,
-        yaxis_title="Count"
-    )
-
-    # Stats
-    min_row = full_data.iloc[values.idxmin()]
-    max_row = full_data.iloc[values.idxmax()]
-    stat_min = f"{min_row['value']:.1f}, {min_row['date'].split('T')[0]}"
-    stat_max = f"{max_row['value']:.1f}, {max_row['date'].split('T')[0]}"
-    logger.info(f"Stats calculated for station {station_id}: {stat_min} {stat_max}")
-
-    key = f"{city}_{category}"
+    key = f"{city}_{category}_{start_date}_{end_date}"
     value = full_data.set_index('date')['value'].to_dict()
-    if key in stored_data:
-        stored_data[key]['data'].update(value)
-        stored_data[key]['ranges'].append(f"{start_date} to {end_date}")
-    else:
-        stored_data[key] = {'data': value}  # Convert DataFrame to JSON-serializable format
-        stored_data[key]['ranges'] = [f"{start_date} to {end_date}"]
-    return fig, stat_min, stat_max, stored_data, days_text
+    stored_data[key] = value
+
+    return stored_data
 
 
-def split_data(df, fulcrum):
-    values = df['value'].astype(float)
+def split_data(values, fulcrum):
     below = sum(1 for v in values if v < fulcrum)
     above = sum(1 for v in values if v > fulcrum)
     return below, above
